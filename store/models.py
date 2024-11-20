@@ -22,6 +22,7 @@ class Product(models.Model):
     description = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     def __str__(self):
         return self.name
@@ -70,4 +71,17 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return f"{self.quantity} x {self.product}"
+    
+
+class CartItem(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField(default=1)
+    
+    def __str__(self):
+        return f"{self.product.name} x {self.quantity}"
+    
+    def get_total_prices(self):
+        return self.product.price * self.quantity
+    
     
