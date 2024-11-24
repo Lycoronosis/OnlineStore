@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 
+
 # Create your models here.
 
 # Model for generic user
@@ -82,6 +83,7 @@ class CartItem(models.Model):
         return f"{self.product.name} x {self.quantity}"
     
     def get_total_prices(self):
-        return self.product.price * self.quantity
+        total_price = self.product.price * self.quantity
+        return total_price
     
     
