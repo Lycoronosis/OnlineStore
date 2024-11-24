@@ -9,6 +9,11 @@ class User(AbstractUser):
     address = models.TextField(blank=True, null=True)
     is_admin = models.BooleanField(default=False)
 
+    class Meta:
+        permissions = [
+            ("can_view_product", "Can view product")
+        ]
+        
 
 # Model for products on website
 class Product(models.Model):
