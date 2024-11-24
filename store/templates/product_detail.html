@@ -1,10 +1,7 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>{{ product.name }}</title>
-</head>
-<body>
+{% extends "base.html" %}
+
+{% block content %}
+
     <h1>{{ product.name }}</h1>
     <p>{{ product.description }}</p>
     <p>Price: ${{ product.price }}</p>
@@ -14,5 +11,4 @@
             <li>{{ parameter.key }}: {{ parameter.value }}</li>
         {% endfor %}
     </ul>
-</body>
-</html>
+{% endblock %}

@@ -1,9 +1,13 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse, Http404
+from django.db.models import Sum, F, Q
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth import login, authenticate
 
-from .models import Product
+from .models import Product, Order, OrderItem
 from .utils import Cart
-from .forms import OrderFrom
+from .forms import OrderFrom, GuestOrderSearchForm, RegistrationFrom, LoginForm
 
 # Create your views here.
 
@@ -42,11 +46,100 @@ def cart_detail(request):
 
 def checkout(request):
     cart = Cart(request)
+    if len(cart) == 0:
+        messages.error(request, "Your cart is empty. Add items to proceed.")
+        return redirect('cart_detail')
     if request.method == 'POST':
         form = OrderFrom(request.POST)
         if form.is_valid():
+            if request.user.is_authenticated:
+                user = request.user
+                address = form.cleaned_data['address']
+            else:
+                order = Order.object.create(
+                    guest_email = form.cleaned_data['email'],
+                    guest_phone = form.cleaned_data['phone'],
+                    address = form.cleaned_data['address']
+                )
+            for item in cart:
+                OrderItem.objects.create(
+                    order=order,
+                    product=item['product'],
+                    quantity=item['quantity'],
+                )
             cart.clear()
-            return redirect('order_complete')
+            return redirect('order_complete', order_id=order.id)
+        else:
+            messages.error(request, "Please correct errors in form")
+            
     else:
         form = OrderFrom()
     return render(request, 'checkout.html', {'form': form, 'cart': cart})
+
+def order_complete(request, order_id):
+    order = get_object_or_404(Order, id=order_id)
+    total_price = order.items.aggregate(
+        total=Sum(F('product__price') * F('quantity'))
+    )['total'] or 0
+    return render(request, 'order_complete.html', {
+        'order': order,
+        'total_price': total_price
+        })
+    
+def order_list(request):
+    form = GuestOrderSearchForm()
+    orders = None
+        
+    if request.user.is_authenticated:
+        orders = (
+            Order.objects.filter(user=request.user)
+            .annotate(total_price=Sum(F('items__product__price') * F('items__quantity')))
+            .order_by('-created_at')
+        )
+    elif request.method == 'POST':
+        form = GuestOrderSearchForm(request.POST)
+        if form.is_valid():
+            email = form.cleaned_data['guest_email']
+            orders = (
+                Order.objects.filter(guest_email=email)
+                .annotate(total_price=Sum(F('items__product__price') * F('items__quantity')))
+                .order_by('-created_at')
+            )
+            if not orders.exists():
+                messages.error(request, "No orders found for this email.")
+        else:
+            messages.error(request, "Invalid email address.")
+
+    return render(request, 'order_list.html', {'orders': orders, 'form': form})
+
+def register(request):
+    if request.method == 'POST':
+        form = RegistrationFrom(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Your account has been created")
+            return redirect('login')
+        else:
+            messages.error(request, "Please correct the errors below")
+    else:
+        form = RegistrationFrom()
+    return render(request, 'register.html', {'form': form})
+
+def login_view(request):
+    if request.method == 'POST':
+        form = LoginForm(request.POST)
+        if form.is_valid():
+            username = form.cleaned_data['username']
+            password = form.cleaned_data['password']
+            user = authenticate(request, username=username, password=password)
+            if user is not None:
+                login(request, user)
+                messages.success(request, "Login successfull!")
+                return redirect('landing_page')
+            else:
+                messages.error("Invalid credentials. Try again")
+        else:
+            messages.error("Please correct the errors below.")
+    else:
+        form = LoginForm()
+    return render(request, 'login.html', {'form': form})

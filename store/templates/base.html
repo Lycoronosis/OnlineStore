@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Lighting Store{% endblock %}</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">  <!-- Link do własnych stylów CSS -->
+</head>
+<body>
+
+<!-- Górny pasek nawigacyjny -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <a class="navbar-brand" href="{% url 'landing_page' %}">Nazwa Strony</a>
+    <div class="collapse navbar-collapse">
+        <ul class="navbar-nav mr-auto">
+            {% if user.is_authenticated %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'logout' %}">Wyloguj</a>
+                </li>
+            {% else %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'login' %}">Logowanie</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'register' %}">Rejestracja</a>
+                </li>
+            {% endif %}
+        </ul>
+    </div>
+</nav>
+
+<!-- Wstążka z przyciskami -->
+<nav class="navbar navbar-expand-lg navbar-light bg-secondary text-white">
+    <div class="container">
+        <a class="navbar-brand text-white" href="{% url 'landing_page' %}">HOME</a>
+        <a class="navbar-brand text-white" href="{% url 'product_list' %}">PRODUCTS</a>
+        <a class="navbar-brand text-white" href="{% url 'gallery' %}">GALLERY</a>
+        <a class="navbar-brand text-white" href="{% url 'downloads' %}">DOWNLOADS</a>
+        <a class="navbar-brand text-white" href="{% url 'contact' %}">CONTACT</a>
+    </div>
+</nav>
+
+<!-- Miejsce na zawartość stron -->
+<div class="container mt-4">
+    {% block content %}
+    <!-- Zawartość poszczególnych stron będzie wstawiana tutaj -->
+    {% endblock %}
+</div>
+
+<!-- Dolny pasek -->
+<footer class="bg-light text-center text-lg-start mt-4">
+    <div class="text-center p-3">
+        © 2024 Moja Strona | Kontakt: info@mojastrona.pl | Tel: 123-456-789
+        <!-- Możesz dodać inne odnośniki do podstron tutaj -->
+    </div>
+</footer>
+
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
