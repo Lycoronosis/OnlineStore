@@ -137,9 +137,9 @@ def login_view(request):
                 messages.success(request, "Login successfull!")
                 return redirect('landing_page')
             else:
-                messages.error("Invalid credentials. Try again")
+                messages.error(request, "Invalid credentials. Try again")
         else:
-            messages.error("Please correct the errors below.")
+            messages.error(request, "Please correct the errors below.")
     else:
         form = LoginForm()
     return render(request, 'login.html', {'form': form})
