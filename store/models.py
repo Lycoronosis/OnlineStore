@@ -1,5 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.core.exceptions import ValidationError
+from django.dispatch import receiver
+from django.db.models.signals import post_save, post_delete
 
 
 # Create your models here.
@@ -24,6 +27,8 @@ class Product(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    is_active = models.BooleanField(default=True)
+
 
     def __str__(self):
         return self.name
@@ -48,9 +53,13 @@ def product_image_upload_path(instance, filename):
 class ProductImage(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name= 'images')
     image = models.ImageField(upload_to= product_image_upload_path)
+    is_main = models.BooleanField(default=False)
 
     def __str__(self):
         return f"Image for {self.product.name}"
+    
+    def get_main_image(self):
+        return self.images.filter(is_main=True).first()
     
 
 class Order(models.Model):
@@ -62,7 +71,10 @@ class Order(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Order {self.id}"
+        return f"Order {self.id} - {self.user.username if self.user else 'Guest'}"
+    
+    # def get_total_price(self):
+    #     return self.items.aggregate(total=Sum(F('product__price') * F('quantity')))['total'] or 0
     
 
 class OrderItem(models.Model):
@@ -70,8 +82,15 @@ class OrderItem(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField()
 
+    def get_total_price(self):
+        return self.product.price * self.quantity
+    
     def __str__(self):
-        return f"{self.quantity} x {self.product}"
+        return f"{self.get_total_price}"
+    
+    def clean(self):
+        if self.quantity <= 0:
+            raise ValidationError("Quantity must be greater than 0.")
     
 
 class CartItem(models.Model):
@@ -82,8 +101,13 @@ class CartItem(models.Model):
     def __str__(self):
         return f"{self.product.name} x {self.quantity}"
     
-    def get_total_prices(self):
-        total_price = self.product.price * self.quantity
-        return total_price
+    def get_total_price(self):
+        return self.product.price * self.quantity
+    
+    @receiver(post_save, sender=OrderItem)
+    def clean_cart_after_order(sender, instance, **kwargs):
+        if instance.order.user:
+            CartItem.objects.filter(user=instance.order.user).delete()
+
     
     

@@ -28,6 +28,20 @@
                 </li>
             {% endif %}
         </ul>
+        <!-- Przycisk koszyka z ilością produktów -->
+        <ul class="navbar-nav ml-auto">
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'cart_detail' %}">
+                    <i class="fas fa-shopping-cart"></i> <!-- Ikona koszyka -->
+                    Koszyk
+                    {% if request.cart|length > 0 %}
+                        <span class="badge badge-pill badge-primary">{{ request.cart|length }}</span> <!-- Liczba produktów -->
+                    {% else %}
+                        <span class="badge badge-pill badge-primary">0</span>
+                    {% endif %}
+                </a>
+            </li>
+        </ul>
     </div>
 </nav>
 
