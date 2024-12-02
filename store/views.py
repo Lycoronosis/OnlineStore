@@ -3,8 +3,10 @@ from django.http import HttpResponse, Http404, JsonResponse
 from django.db.models import Sum, F, Q
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth import login, authenticate
+from django.contrib.auth import login, authenticate, logout, get_backends
 from django.conf import settings
+from django.contrib.sessions.models import Session
+
 
 from .models import Product, Order, OrderItem
 from .utils import Cart
@@ -34,7 +36,8 @@ def cart_add(request, product_id):
     product = get_object_or_404(Product, id=product_id)
     quantity = int(request.POST.get('quantity', 1))
     cart.add(product=product, quantity=1)
-    return JsonResponse({'message': 'Product added to cart', 'cart count': len(cart)})
+    messages.success(request, f'{product.name} has been added to your cart.')
+    return redirect('product_detail', product_id=product.id)
 
 def cart_remove(request, product_id):
     cart = Cart(request)
@@ -120,7 +123,6 @@ def register(request):
     if request.method == 'POST':
         form = RegistrationFrom(request.POST)
         if form.is_valid():
-            form.save()
             user = form.save()
             login(request, user)
             messages.success(request, "Your account has been created and you are logged in.")
@@ -134,18 +136,25 @@ def register(request):
 def login_view(request):
     if request.method == 'POST':
         form = LoginForm(request.POST)
+        print(form.errors)
         if form.is_valid():
             username = form.cleaned_data['username']
             password = form.cleaned_data['password']
             user = authenticate(request, username=username, password=password)
             if user is not None:
                 login(request, user)
-                messages.success(request, "Login successfull!")
-                return redirect(settings.LOGIN_REDIRECT_URL)
+                messages.success(request, "Login successful!")
+                return redirect('landing_page')
             else:
-                messages.error(request, "Invalid credentials. Try again")
-        else:
-            messages.error(request, "Please correct the errors below.")
+                messages.error(request, "Invalid username or password. Please try again.")
     else:
         form = LoginForm()
     return render(request, 'login.html', {'form': form})
+
+
+
+def logout_view(request):
+    logout(request)
+    request.session.flush()
+    messages.success(request, "You are logged out.")
+    return redirect('landing_page')

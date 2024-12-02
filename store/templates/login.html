@@ -10,14 +10,10 @@
     <button type="submit" class="btn btn-primary">Login</button>
 </form>
 
-<a href="{% provider_login_url 'google' %}">Login with Google</a>
-
-{% if messages %}
-  <ul>
-    {% for message in messages %}
-      <li>{{ message }}</li>
-    {% endfor %}
-  </ul>
-{% endif %}
+{% if form.errors %}
+        <div class="errorlist">
+            {{ form.errors }}
+        </div>
+    {% endif %}
 
 {% endblock %}
