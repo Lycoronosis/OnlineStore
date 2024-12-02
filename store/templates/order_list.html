@@ -1,34 +1,13 @@
 {% extends "base.html" %}
+
 {% block content %}
-
-<h1>Your Orders</h1>
-
-{% if user.is_authenticated %}
-    <p>Welcome back, {{ user.username }}!</p>
-{% else %}
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Search Orders</button>
-    </form>
-{% endif %}
-
-{% if orders %}
+    <h1>Your Orders</h1>
     <ul>
         {% for order in orders %}
             <li>
-                <strong>Order #{{ order.id }}</strong> - {{ order.created_at|date:"F j, Y" }}
-                <ul>
-                    {% for item in order.items.all %}
-                        <li>{{ item.quantity }}x {{ item.product.name }} - ${{ item.product.price }}</li>
-                    {% endfor %}
-                </ul>
-                <p><strong>Total:</strong> ${{ order.total_price|default:0 }}</p>
+                <a href="{% url 'order_detail' order.id %}">Order #{{ order.id }}</a>
+                - Total: ${{ order.total_price }} - Status: {{ order.get_status_display }}
             </li>
         {% endfor %}
     </ul>
-{% else %}
-    <p>No orders found.</p>
-{% endif %}
-
 {% endblock %}

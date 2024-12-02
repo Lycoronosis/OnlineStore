@@ -8,9 +8,10 @@ from django.conf import settings
 from django.contrib.sessions.models import Session
 
 
+
 from .models import Product, Order, OrderItem
 from .utils import Cart
-from .forms import OrderFrom, GuestOrderSearchForm, RegistrationFrom, LoginForm
+from .forms import OrderForm, GuestOrderSearchForm, RegistrationForm, LoginForm
 
 # Create your views here.
 
@@ -49,79 +50,42 @@ def cart_detail(request):
     cart = Cart(request)
     return render(request, 'cart_detail.html', {'cart': cart})
 
+@login_required
 def checkout(request):
-    cart = Cart(request)
-    if len(cart) == 0:
-        messages.error(request, "Your cart is empty. Add items to proceed.")
-        return redirect('cart_detail')
+    cart = request.session.get('cart', {})
+    print("Cart content:", cart)
     if request.method == 'POST':
-        form = OrderFrom(request.POST)
+        form = OrderForm(request.POST, user=request.user)
         if form.is_valid():
-            if request.user.is_authenticated:
-                order = Order.objects.create(
-                    user = request.user,
-                    address = form.cleaned_data['address'],
-                )
-            else:
-                order = Order.objects.create(
-                    guest_email = form.cleaned_data['email'],
-                    guest_phone = form.cleaned_data['phone'],
-                    address = form.cleaned_data['address'],
-                )
-            for item in cart:
-                OrderItem.objects.create(
-                    order=order,
-                    product=item['product'],
-                    quantity=item['quantity'],
-                )
-            cart.clear()
+            order = form.save(cart=cart, user=request.user)
             return redirect('order_complete', order_id=order.id)
-        else:
-            messages.error(request, "Please correct errors in form")
-            
     else:
-        form = OrderFrom()
-    return render(request, 'checkout.html', {'form': form, 'cart': cart})
+        form = OrderForm(user=request.user)
+    
+    return render(request, 'checkout.html', {'form': form})
 
 def order_complete(request, order_id):
     order = get_object_or_404(Order, id=order_id)
-    total_price = order.items.aggregate(
-        total=Sum(F('product__price') * F('quantity'))
-    )['total'] or 0
+    total_price = sum(item.get_total_price() for item in order.items.all())
+
     return render(request, 'order_complete.html', {
         'order': order,
         'total_price': total_price
-        })
+    })
     
+@login_required
 def order_list(request):
-    form = GuestOrderSearchForm()
-    orders = None
-        
-    if request.user.is_authenticated:
-        orders = (
-            Order.objects.filter(user=request.user)
-            .annotate(total_price=Sum(F('items__product__price') * F('items__quantity')))
-            .order_by('-created_at')
-        )
-    elif request.method == 'POST':
-        form = GuestOrderSearchForm(request.POST)
-        if form.is_valid():
-            email = form.cleaned_data['guest_email']
-            orders = (
-                Order.objects.filter(guest_email=email)
-                .annotate(total_price=Sum(F('items__product__price') * F('items__quantity')))
-                .order_by('-created_at')
-            )
-            if not orders.exists():
-                messages.error(request, "No orders found for this email.")
-        else:
-            messages.error(request, "Invalid email address.")
+    orders = Order.objects.filter(user=request.user).order_by('-created_at')
+    return render(request, 'order_list.html', {'orders': orders})
 
-    return render(request, 'order_list.html', {'orders': orders, 'form': form})
+@login_required
+def order_detail(request, order_id):
+    order = get_object_or_404(Order, id=order_id)
+    return render(request, 'order_detail.html', {'order': order})
 
 def register(request):
     if request.method == 'POST':
-        form = RegistrationFrom(request.POST)
+        form = RegistrationForm(request.POST)
         if form.is_valid():
             user = form.save()
             login(request, user)
@@ -130,7 +94,7 @@ def register(request):
         else:
             messages.error(request, "Please correct the errors below")
     else:
-        form = RegistrationFrom()
+        form = RegistrationForm()
     return render(request, 'register.html', {'form': form})
 
 def login_view(request):

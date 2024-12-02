@@ -1,22 +1,22 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import User, Product, ProductParameter, ProductImage, Order, OrderItem
+from .models import CustomUser, Product, ProductParameter, ProductImage, Order, OrderItem
 
 
 # Register your models here.
 class UserAdmin(BaseUserAdmin):
-    model = User
+    model = CustomUser
     fieldsets = BaseUserAdmin.fieldsets + (
-        ('Additional Info', {'fields': ('phone_number', 'address', 'is_admin')}),
+        ('Additional Info', {'fields': ('phone_number', 'address')}),
     )
-    list_display= ('username', 'email', 'phone_number', 'is_staff', 'is_admin')
+    list_display= ('username', 'email', 'phone_number', 'is_staff')
     search_fields = ('username', 'email', 'phonenumber')
     
 
 class ProductAdmin(admin.ModelAdmin):
     list_display = ('name', 'price')
     list_editable = ('price',)
-    fields = ('name', 'description', 'price')
+    fields = ('name', 'catalog_code', 'description', 'price')
     search_fields = ('name',)
     list_filter = ('price',)
 
@@ -31,25 +31,17 @@ class ProductImageAdmin(admin.ModelAdmin):
     search_fields = ('product__name',)
     list_filter = ('product',)
 
-
-class OrderAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user', 'guest_email', 'created_at', 'is_paid')
-    list_filter = ('is_paid', 'created_at')
-    search_fields = ('user__username', 'guest_email', 'guest_phone')
-    inlines = []
-
-
 class OrderItemInLine(admin.TabularInline):
     model = OrderItem
     extra = 0
     
-
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user', 'guest_email', 'created_at', 'is_paid')
+    list_display = ('id', 'user', 'created_at', 'is_paid')
+    list_filter = ('is_paid', 'created_at')
+    search_fields = ('user__username', 'phone_number')
     inlines = [OrderItemInLine]
- 
- 
-admin.site.register(User, UserAdmin)
+
+admin.site.register(CustomUser, UserAdmin)
 admin.site.register(Product, ProductAdmin)
 admin.site.register(ProductParameter)
 admin.site.register(OrderItem)   

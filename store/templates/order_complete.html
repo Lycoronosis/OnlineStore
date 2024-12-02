@@ -4,13 +4,9 @@
 <h1>Thank you for your order!</h1>
 <p>Your order ID is {{ order.id }}</p>
 <p>Total price: ${{ total_price }}</p>
-<p>We have sent a confirmation to: 
-    {% if order.user %}
-        {{ order.user.email }}
-    {% else %}
-        {{ order.guest_email }}
-    {% endif %}
-</p>
+<p>We have sent a confirmation to: {{ order.user.email }}</p>
+<a href="{% url 'order_detail' order_id=order.id %}">See your order here</a>
+<p>Or</p>
 <a href="{% url 'product_list' %}">Continue shopping</a>
 
 {% endblock %}
