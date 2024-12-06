@@ -1,0 +1,8 @@
+{
+  "id": "0CnSdJMBKw5XYleQ8Oes",
+  "name": "OnlineStore",
+  "expiration": 1738015801523,
+  "api_key": "T15aFRJDRfKVs89rTrhjrw",
+  "encoded": "MENuU2RKTUJLdzVYWWxlUThPZXM6VDE1YUZSSkRSZktWczg5clRyaGpydw==",
+  "beats_logstash_format": "0CnSdJMBKw5XYleQ8Oes:T15aFRJDRfKVs89rTrhjrw"
+}

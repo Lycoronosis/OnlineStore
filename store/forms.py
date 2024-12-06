@@ -1,6 +1,7 @@
 from django import forms
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
+from django.contrib.auth import get_user_model, authenticate
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 
 from .models import Order, OrderItem, User
@@ -37,7 +38,7 @@ class OrderFrom(forms.Form):
         return phone
     
     def clean_email(self):
-        email = self.cleaned_data.get['email']
+        email = self.cleaned_data.get('email')
         try:
             validate_email(email)
         except ValidationError:
@@ -52,7 +53,7 @@ class GuestOrderSearchForm(forms.Form):
     
 
 class RegistrationFrom(UserCreationForm):
-    email = forms.EmailField(required=True)
+    email = forms.EmailField(required=False)
     phone_number = forms.CharField(max_length=15, required=False)
     address = forms.CharField(widget=forms.Textarea, required=False)
     
@@ -70,8 +71,16 @@ class RegistrationFrom(UserCreationForm):
         return user
     
 
-class LoginForm(AuthenticationForm):
-    username = forms.CharField(max_length=150)
-    password = forms.CharField(widget=forms.PasswordInput)
+class LoginForm(forms.Form):
+        
+    username = forms.CharField(
+        max_length=150,
+        label = "Username",
+        widget=forms.TextInput(attrs={'placeholder': 'Enter username'}),
+        )
+    password = forms.CharField(
+        label="Password",
+        widget=forms.PasswordInput(attrs={'placeholder': 'Enter password'}),
+        )
     remember_me = forms.BooleanField(required=False, widget=forms.CheckboxInput())
     
