@@ -11,4 +11,55 @@
             <li>{{ parameter.key }}: {{ parameter.value }}</li>
         {% endfor %}
     </ul>
+
+    <!-- Formularz dodawania do koszyka z polem ilości -->
+    <form id="add-to-cart-form" method="POST" action="{% url 'cart_add' product.id %}">
+        {% csrf_token %}
+        
+        <!-- Pole wyboru ilości produktu -->
+        <div class="form-group">
+            <label for="quantity">Quantity:</label>
+            <input type="number" id="quantity" name="quantity" class="form-control" min="1" value="1" />
+        </div>
+
+        <!-- Przycisk dodawania do koszyka -->
+        <button type="submit" class="btn btn-primary" id="add-to-cart-button">
+            Add to Cart
+        </button>
+    </form>
+
+    <p id="cart-message"></p>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Funkcja do obsługi kliknięcia przycisku "Add to Cart"
+    document.getElementById('add-to-cart-form').addEventListener('submit', function(event) {
+        event.preventDefault();  // Zapobiegamy przeładowaniu strony
+
+        const form = this;
+        const url = form.action;  // URL, do którego wyślemy zapytanie AJAX
+
+        // Wyślij zapytanie AJAX
+        fetch(url, {
+            method: 'POST',
+            body: new FormData(form),  // Przesyłamy dane formularza, w tym CSRF token
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',  // Umożliwiamy identyfikowanie zapytania jako AJAX
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Po zakończeniu dodawania produktu do koszyka, aktualizujemy liczbę produktów w koszyku
+            document.getElementById('cart-message').textContent = data.message;
+            // Jeśli chcesz zaktualizować liczbę produktów w koszyku na górnym pasku, możesz to zrobić tutaj
+            const cartCountElement = document.querySelector('.cart-count');
+            if (cartCountElement) {
+                cartCountElement.textContent = data.cart_count;
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    });
+</script>
 {% endblock %}

@@ -37,11 +37,14 @@ class OrderFrom(forms.Form):
         return phone
     
     def clean_email(self):
-        email = self.cleaned_data.get('email')
+        email = self.cleaned_data.get['email']
         try:
             validate_email(email)
         except ValidationError:
             raise forms.ValidationError("Please enter valid email address.")
+        if User.objects.filter(email=email).exists():
+            raise forms.ValidationError("An account with this email already exists.")
+        return email
 
 
 class GuestOrderSearchForm(forms.Form):
@@ -70,4 +73,5 @@ class RegistrationFrom(UserCreationForm):
 class LoginForm(AuthenticationForm):
     username = forms.CharField(max_length=150)
     password = forms.CharField(widget=forms.PasswordInput)
+    remember_me = forms.BooleanField(required=False, widget=forms.CheckboxInput())
     

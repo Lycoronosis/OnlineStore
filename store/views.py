@@ -1,9 +1,10 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpResponse, Http404
+from django.http import HttpResponse, Http404, JsonResponse
 from django.db.models import Sum, F, Q
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, authenticate
+from django.conf import settings
 
 from .models import Product, Order, OrderItem
 from .utils import Cart
@@ -31,14 +32,15 @@ def product_detail(request, product_id):
 def cart_add(request, product_id):
     cart = Cart(request)
     product = get_object_or_404(Product, id=product_id)
-    cart.add(product=product)
-    return redirect('cart_detail.html')
+    quantity = int(request.POST.get('quantity', 1))
+    cart.add(product=product, quantity=1)
+    return JsonResponse({'message': 'Product added to cart', 'cart count': len(cart)})
 
 def cart_remove(request, product_id):
     cart = Cart(request)
     product = get_object_or_404(Product, id=product_id)
-    cart.remove(product=product)
-    return redirect('cart_detail.html')
+    cart.remove(product)
+    return redirect('cart_detail')
 
 def cart_detail(request):
     cart = Cart(request)
@@ -53,13 +55,15 @@ def checkout(request):
         form = OrderFrom(request.POST)
         if form.is_valid():
             if request.user.is_authenticated:
-                user = request.user
-                address = form.cleaned_data['address']
+                order = Order.objects.create(
+                    user = request.user,
+                    address = form.cleaned_data['address'],
+                )
             else:
-                order = Order.object.create(
+                order = Order.objects.create(
                     guest_email = form.cleaned_data['email'],
                     guest_phone = form.cleaned_data['phone'],
-                    address = form.cleaned_data['address']
+                    address = form.cleaned_data['address'],
                 )
             for item in cart:
                 OrderItem.objects.create(
@@ -117,8 +121,10 @@ def register(request):
         form = RegistrationFrom(request.POST)
         if form.is_valid():
             form.save()
-            messages.success(request, "Your account has been created")
-            return redirect('login')
+            user = form.save()
+            login(request, user)
+            messages.success(request, "Your account has been created and you are logged in.")
+            return redirect('landing_page')
         else:
             messages.error(request, "Please correct the errors below")
     else:
@@ -135,7 +141,7 @@ def login_view(request):
             if user is not None:
                 login(request, user)
                 messages.success(request, "Login successfull!")
-                return redirect('landing_page')
+                return redirect(settings.LOGIN_REDIRECT_URL)
             else:
                 messages.error(request, "Invalid credentials. Try again")
         else:
